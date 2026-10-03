@@ -42,6 +42,9 @@ class Parser:
 
     def parseExp(self):
         # TODO: write code for parsing an exp
+        tok = self.scanner.getNextToken()
+        tt = tok.getType()
+              
         return None
 
     def parseRest(self):

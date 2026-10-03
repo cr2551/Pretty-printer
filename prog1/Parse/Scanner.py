@@ -29,6 +29,55 @@ class Scanner:
     def isDigit(ch):
         return ch >= '0' and ch <= '9'
 
+    @staticmethod
+    def _isletter(ch):
+        if (ch >= 'A' and ch <= 'Z'):
+            return True
+        elif (ch >= 'a' and ch <= 'z'):
+            return True
+        else:
+            return False
+    @staticmethod
+    def _is_special_initial(ch):
+        special_initals = ['!', '$', '%', '&', '*', '/', ':', '<', '=', '>', '?', '^', '_', '~']
+        if ch in special_initals:
+            return True
+        else:
+            return False
+    @staticmethod
+    def _is_special_subsequent(ch):
+        special_subsequents = ['+', '-', '.', '@']
+        if ch in special_subsequents:
+            return True
+        else:
+            return False
+
+    # not being used right now
+    @staticmethod
+    def _is_peculiar_identifier(ch):
+        peculiars = ['+', '-', '...']
+        if ch in peculiars:
+            return True # MODIFY later
+        else:
+            return False
+        
+
+
+    def is_valid_initial_ident(self, ch):
+        if self._isletter(ch) or self._is_special_initial(ch):
+            return True
+
+    def is_valid_subsequent(self, ch):
+        if self.is_valid_initial_ident(ch) \
+                or self.isDigit(ch) \
+                or self._is_special_subsequent(ch):
+            return True
+        else:
+            return False
+        # return true if the character is as valid first char for an identifier
+        
+
+
     def getNextToken(self):
         try:
             # It would be more efficient if we'd maintain our own
@@ -38,6 +87,14 @@ class Scanner:
             ch = self.read()
 
             # TODO: Skip white space and comments
+            while ch in ['', '\t']:
+                ch = self.read()
+
+            if ch == ';':
+                while ch != '\n':
+                    ch = self.read()
+                ch = self.read() # skip the newline too
+                
 
             # Return None on EOF
             if ch == "":
@@ -74,25 +131,43 @@ class Scanner:
             elif ch == '"':
                 self.buf = []
                 # TODO: scan a string into the buffer variable buf
-    
+                ch = self.read()
+                while ch != '"':
+                    self.buf.append(ch)
+                    ch = self.read()
+
                 return StrToken("".join(self.buf))
 
             # Integer constants
             elif self.isDigit(ch):
                 i = ord(ch) - ord('0')
                 # TODO: scan the number and convert it to an integer
+                # only for integers > 0
+                num = str(i)
+                next = self.peek()
+                while self.isDigit(next):
+                    ch = self.read()
+                    num += ch
+                    next = self.peek()
 
+                i = int(num)
+                
                 # make sure that the character following the integer
                 # is not removed from the input stream
                 return IntToken(i)
     
             # Identifiers
-            elif ch >= 'A' and ch <= 'Z':
+            elif (ch >= 'A' and ch <= 'Z') or self.is_valid_initial_ident(ch):
                 # or ch is some other vaid first character
                 # for an identifier
                 self.buf = []
+                self.buf.append(ch)
                 # TODO: scan an identifier into the buffer variable buf
-
+                next = self.peek()
+                while self.is_valid_subsequent(next):
+                    ch = self.read()
+                    self.buf.append(ch)
+                    next = self.peek()
 
                 # make sure that the character following the identifier
                 # is not removed from the input stream
@@ -115,3 +190,8 @@ if __name__ == "__main__":
     print(tt)
     if tt == TokenType.INT:
         print(tok.getIntVal())
+    elif tt == TokenType.STR:
+        print(tok.getStrVal())
+    elif tt == TokenType.IDENT:
+        print(tok.getName())
+    
