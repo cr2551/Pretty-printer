@@ -168,10 +168,10 @@ class Scanner:
                     ch = self.read()
                     self.buf.append(ch)
                     next = self.peek()
-
+                name = "".join(self.buf).lower()
                 # make sure that the character following the identifier
                 # is not removed from the input stream
-                return IdentToken("".join(self.buf))
+                return IdentToken(name)
 
             # Illegal character
             else:

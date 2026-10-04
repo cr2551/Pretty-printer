@@ -3,6 +3,8 @@
 from Tree import Node
 from Tree import Ident
 
+from Tokens import TokenType
+from Special import *
 class Cons(Node):
     def __init__(self, a, d):
         self.car = a
@@ -20,10 +22,31 @@ class Cons(Node):
     def parseList(self):
         # TODO: implement this function and any helper functions
         # you might need
-        self.form = None
+        self.form = self.choose_form(self.car)
 
     def print(self, n, p=False):
         self.form.print(self, n, p)
+
+    def choose_form(self, a):
+        if a.get_type() == TokenType.IDENT:
+            if a.getName() == "set":
+                return Set()
+            elif a.getName() == "define":
+                return Define()
+            elif a.getName() == "if":
+                return If()
+            elif a.getName() == "lambda":
+                return Lambda()
+            elif a.getName() == "begin":
+                return Begin()
+            elif a.getName() == "cond":
+                return Cond()
+            elif a.getName() == "let":
+                return Let()
+            elif a.getName() == "quote":
+                return Quote()
+            
+        return Regular()
 
 if __name__ == "__main__":
     c = Cons(Ident("Hello"), Ident("World"))

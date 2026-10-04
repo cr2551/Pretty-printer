@@ -36,20 +36,59 @@
 import sys
 from Tokens import TokenType
 
+from Tree import * # added
+
 class Parser:
     def __init__(self, s):
         self.scanner = s
 
     def parseExp(self):
+        tok = None
+        return self.parseExpHelper(tok)
+
+    def parseExpHelper(self, tok):
         # TODO: write code for parsing an exp
-        tok = self.scanner.getNextToken()
+        if tok == None:
+            tok = self.scanner.getNextToken()
+            if tok is None:
+                return None
         tt = tok.getType()
-              
+
+        if tt == TokenType.LPAREN:
+            return self.parseRest()
+        elif tt == TokenType.TRUE:
+            return BoolLit(True)
+        elif tt == TokenType.FALSE:
+            return BoolLit(False)
+        elif tt == TokenType.QUOTE:
+            cons = Cons(Ident("quote"), Cons(self.parseExp(), Nil.getInstance()))
+            return cons
+        elif tt == TokenType.INT:
+            return IntLit(tok.getIntVal())
+        elif tt == TokenType.STR:
+            return StrLit(tok.getStringVal())
+        elif tt == TokenType.IDENT:
+            return Ident(tok.getName())
         return None
 
     def parseRest(self):
         # TODO: write code for parsing a rest
-        return None
+        tok = self.scanner.getNextToken()
+        if tok == None:
+            return None
+        tt = tok.getType()
+        if tt == TokenType.RPAREN:
+            return Nil.getInstance()
+        else:
+            exp = self.parseExpHelper(tok)
+            cons = Cons(exp, Cons(self.parseRest(), Nil.getInstance()))
+            tok = self.scanner.getNextToken()
+            if tok.getType() == TokenType.DOT:
+                return Cons(cons, self.parseExp())
+            return cons
+        
+    
+
 
     # TODO: Add any additional methods you might need
 
