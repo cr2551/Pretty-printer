@@ -21,15 +21,14 @@ class Cons(Node):
     def parseList(self):
         # TODO: implement this function and any helper functions
         # you might need
-        self.form = self.choose_form(self.car)
+        self.form = self.choose_form()
 
     def print(self, n, p=False):
         self.form.print(self, n, p)
 
-    def choose_form(self, car):
+    def choose_form(self):
 
-
-        # if isinstance(car, Ident):
+        car = self.getCar()
         if car.isSymbol():
             if car.name == "set":
                 return Set()
@@ -48,7 +47,7 @@ class Cons(Node):
             elif car.name == "quote":
                 return Quote()
                 
-            return Regular()
+        return Regular()
 
     def getCar(self):
         return self.car

@@ -90,11 +90,15 @@ class Parser:
         else:
             exp = self.parseExpHelper(tok)
             tok = self.scanner.getNextToken()
+            if tok is None:
+                self.__error("Input reached EOF without ')'")
+                return None
             if tok.getType() == TokenType.DOT:
                 cons =  Cons(exp, self.parseExp())
-                next = self.scanner.getNextToken()
-                if next is None or next.getType() is not TokenType.RPAREN:
+                nextTok = self.scanner.getNextToken()
+                if nextTok is None or nextTok.getType() is not TokenType.RPAREN:
                     self.__error("Expected ')' after '. exp'")
+                return cons
                     
             rest = self.parseRestHelper(tok)
             cons = Cons(exp, rest)
