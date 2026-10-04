@@ -87,7 +87,7 @@ class Scanner:
             ch = self.read()
 
             # TODO: Skip white space and comments
-            while ch in ['', '\t']:
+            while ch in [' ', '\t', '\n']:
                 ch = self.read()
 
             if ch == ';':

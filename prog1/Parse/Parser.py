@@ -57,34 +57,47 @@ class Parser:
         if tt == TokenType.LPAREN:
             return self.parseRest()
         elif tt == TokenType.TRUE:
-            return BoolLit(True)
+            return BoolLit.getInstance(True)
         elif tt == TokenType.FALSE:
-            return BoolLit(False)
+            return BoolLit.getInstance(False)
         elif tt == TokenType.QUOTE:
             cons = Cons(Ident("quote"), Cons(self.parseExp(), Nil.getInstance()))
             return cons
         elif tt == TokenType.INT:
             return IntLit(tok.getIntVal())
         elif tt == TokenType.STR:
-            return StrLit(tok.getStringVal())
+            return StrLit(tok.getStrVal())
         elif tt == TokenType.IDENT:
             return Ident(tok.getName())
         return None
 
     def parseRest(self):
+        tok = None
+        return self.parseRestHelper(tok)
+
+
+    def parseRestHelper(self, tok):
         # TODO: write code for parsing a rest
-        tok = self.scanner.getNextToken()
         if tok == None:
-            return None
+            tok = self.scanner.getNextToken()
+            if tok is None:
+                return None
+
         tt = tok.getType()
         if tt == TokenType.RPAREN:
             return Nil.getInstance()
+        
         else:
             exp = self.parseExpHelper(tok)
-            cons = Cons(exp, Cons(self.parseRest(), Nil.getInstance()))
             tok = self.scanner.getNextToken()
             if tok.getType() == TokenType.DOT:
-                return Cons(cons, self.parseExp())
+                cons =  Cons(exp, self.parseExp())
+                next = self.scanner.getNextToken()
+                if next is None or next.getType() is not TokenType.RPAREN:
+                    self.__error("Expected ')' after '. exp'")
+                    
+            rest = self.parseRestHelper(tok)
+            cons = Cons(exp, rest)
             return cons
         
     

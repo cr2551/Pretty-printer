@@ -9,5 +9,8 @@ class Regular(Special):
 
     def print(self, t, n, p):
         # TODO: Implement this function.
-        ...
+        if p == False:
+            print('(', end='')
+
+        t.car.print(n, p)
         

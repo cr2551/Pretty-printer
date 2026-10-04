@@ -1,7 +1,7 @@
 # Cons -- Parse tree node class for representing a Cons node
 
 from Tree import Node
-from Tree import Ident
+from Tree.Ident import Ident
 
 from Tokens import TokenType
 from Special import *
@@ -27,26 +27,30 @@ class Cons(Node):
     def print(self, n, p=False):
         self.form.print(self, n, p)
 
-    def choose_form(self, a):
-        if a.get_type() == TokenType.IDENT:
-            if a.getName() == "set":
+    def choose_form(self, car):
+
+
+        if isinstance(car, Ident):
+            if car.name == "set":
                 return Set()
-            elif a.getName() == "define":
+            elif car.name == "define":
                 return Define()
-            elif a.getName() == "if":
+            elif car.name == "if":
                 return If()
-            elif a.getName() == "lambda":
+            elif car.name == "lambda":
                 return Lambda()
-            elif a.getName() == "begin":
+            elif car.name == "begin":
                 return Begin()
-            elif a.getName() == "cond":
+            elif car.name == "cond":
                 return Cond()
-            elif a.getName() == "let":
+            elif car.name == "let":
                 return Let()
-            elif a.getName() == "quote":
+            elif car.name == "quote":
                 return Quote()
-            
-        return Regular()
+                
+            return Regular()
+        else:
+            print("Warning: cons car node is not identifier. type: ", car)
 
 if __name__ == "__main__":
     c = Cons(Ident("Hello"), Ident("World"))
