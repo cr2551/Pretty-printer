@@ -48,13 +48,13 @@ class Node(ABC):
     # in class Cons.  After setCar, a Cons cell needs to be `parsed' again
     # using parseList.
     def getCar(self):
-        return None
+        raise NotImplementedError
 
     def getCdr(self):
-        return None
+        raise NotImplementedError
 
     def setCar(self, a):
-        pass
+        raise NotImplementedError
 
     def setCdr(self, d):
-        pass
+        raise NotImplementedError

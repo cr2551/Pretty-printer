@@ -3,7 +3,6 @@
 from Tree import Node
 from Tree.Ident import Ident
 
-from Tokens import TokenType
 from Special import *
 class Cons(Node):
     def __init__(self, a, d):
@@ -30,7 +29,8 @@ class Cons(Node):
     def choose_form(self, car):
 
 
-        if isinstance(car, Ident):
+        # if isinstance(car, Ident):
+        if car.isSymbol():
             if car.name == "set":
                 return Set()
             elif car.name == "define":
@@ -49,8 +49,24 @@ class Cons(Node):
                 return Quote()
                 
             return Regular()
-        else:
-            print("Warning: cons car node is not identifier. type: ", car)
+
+    def getCar(self):
+        return self.car
+
+
+    def getCdr(self):
+        return self.cdr
+
+    def setCar(self, a):
+        self.car = a
+        self.parseList()
+
+    def setCdr(self, d):
+        self.cdr = d
+
+    def isPair(self):
+        return True
+
 
 if __name__ == "__main__":
     c = Cons(Ident("Hello"), Ident("World"))

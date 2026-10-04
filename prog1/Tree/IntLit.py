@@ -13,6 +13,9 @@ class IntLit(Node):
             sys.stdout.write(' ')
         sys.stdout.write(str(self.intVal) + '\n')
 
+    def isNumber(self):
+        return True
+
 if __name__ == "__main__":
     id = IntLit(42)
     id.print(0)
