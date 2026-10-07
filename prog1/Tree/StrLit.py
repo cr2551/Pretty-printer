@@ -8,10 +8,8 @@ class StrLit(Node):
         self.strVal = s
 
     def print(self, n, p=False):
-        # There got to be a more efficient way to print n spaces.
-        for _ in range(n):
-            sys.stdout.write(' ')
-        sys.stdout.write("\"" + self.strVal + "\"\n")
+        escaped = self.strVal.replace("\\", "\\\\").replace('"', '\\"')
+        sys.stdout.write(" " * n + '"' + escaped + '"\n')
 
     def isString(self):
         return True

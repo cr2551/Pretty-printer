@@ -1,197 +1,89 @@
-# Scanner -- The lexical analyzer for the Scheme printer and interpreter
+# Scanner -- lexical analysis for the project's Scheme subset.
 
-import sys
-import io
-from Tokens import *
+from Tokens import Token, TokenType, IntToken, StrToken, IdentToken
+
 
 class Scanner:
-    def __init__(self, i):
-        self.In = i
-        self.buf = []
+    WHITESPACE = " \t\n\r\f"
+    INITIAL = "!$%&*/:<=>?^_~"
+    SUBSEQUENT = "+-.@"
+
+    def __init__(self, stream):
+        self.In = stream
         self.ch_buf = None
 
     def read(self):
-        if self.ch_buf == None:
+        if self.ch_buf is None:
             return self.In.read(1)
-        else:
-            ch = self.ch_buf
-            self.ch_buf = None
-            return ch
-    
+        ch, self.ch_buf = self.ch_buf, None
+        return ch
+
     def peek(self):
-        if self.ch_buf == None:
+        if self.ch_buf is None:
             self.ch_buf = self.In.read(1)
-            return self.ch_buf
-        else:
-            return self.ch_buf
+        return self.ch_buf
 
     @staticmethod
     def isDigit(ch):
-        return ch >= '0' and ch <= '9'
+        return "0" <= ch <= "9"
 
-    @staticmethod
-    def _isletter(ch):
-        if (ch >= 'A' and ch <= 'Z'):
-            return True
-        elif (ch >= 'a' and ch <= 'z'):
-            return True
-        else:
-            return False
-    @staticmethod
-    def _is_special_initial(ch):
-        special_initals = ['!', '$', '%', '&', '*', '/', ':', '<', '=', '>', '?', '^', '_', '~']
-        if ch in special_initals:
-            return True
-        else:
-            return False
-    @staticmethod
-    def _is_special_subsequent(ch):
-        special_subsequents = ['+', '-', '.', '@']
-        if ch in special_subsequents:
-            return True
-        else:
-            return False
+    @classmethod
+    def is_valid_initial_ident(cls, ch):
+        return bool(ch) and ("a" <= ch.lower() <= "z" or ch in cls.INITIAL)
 
-    # not being used right now
-    @staticmethod
-    def _is_peculiar_identifier(ch):
-        peculiars = ['+', '-', '...']
-        if ch in peculiars:
-            return True # MODIFY later
-        else:
-            return False
-        
+    @classmethod
+    def is_valid_subsequent(cls, ch):
+        return bool(ch) and (cls.is_valid_initial_ident(ch)
+                             or cls.isDigit(ch) or ch in cls.SUBSEQUENT)
 
-
-    def is_valid_initial_ident(self, ch):
-        if self._isletter(ch) or self._is_special_initial(ch):
-            return True
-
-    def is_valid_subsequent(self, ch):
-        if self.is_valid_initial_ident(ch) \
-                or self.isDigit(ch) \
-                or self._is_special_subsequent(ch):
-            return True
-        else:
-            return False
-        # return true if the character is as valid first char for an identifier
-        
-
+    @classmethod
+    def delimiter(cls, ch):
+        return not ch or ch in cls.WHITESPACE + '();"'
 
     def getNextToken(self):
-        try:
-            # It would be more efficient if we'd maintain our own
-            # input buffer for a line and read characters out of that
-            # buffer, but reading individual characters from the
-            # input stream is easier.
+        while True:
             ch = self.read()
-
-            # TODO: Skip white space and comments
-            while ch in [' ', '\t', '\n']:
-                ch = self.read()
-
-            if ch == ';':
-                while ch != '\n':
-                    ch = self.read()
-                ch = self.read() # skip the newline too
-                
-
-            # Return None on EOF
-            if ch == "":
+            if not ch:
                 return None
-    
-            # Special characters
-            elif ch == '\'':
-                return Token(TokenType.QUOTE)
-            elif ch == '(':
-                return Token(TokenType.LPAREN)
-            elif ch == ')':
-                return Token(TokenType.RPAREN)
-            elif ch == '.':
-                #  We ignore the special identifier `...'.
-                return Token(TokenType.DOT)
+            if ch in self.WHITESPACE:
+                continue
+            if ch == ";":
+                while ch and ch not in "\r\n":
+                    ch = self.read()
+                continue
+            break
 
-            # Boolean constants
-            elif ch == '#':
+        punctuation = {"(": TokenType.LPAREN, ")": TokenType.RPAREN,
+                       "'": TokenType.QUOTE}
+        if ch in punctuation:
+            return Token(punctuation[ch])
+        if ch == '"':
+            chars = []
+            while True:
                 ch = self.read()
-
-                if ch == 't':
-                    return Token(TokenType.TRUE)
-                elif ch == 'f':
-                    return Token(TokenType.FALSE)
-                elif ch == "":
-                    sys.stderr.write("Unexpected EOF following #\n")
-                    return None
-                else:
-                    sys.stderr.write("Illegal character '" +
-                                     chr(ch) + "' following #\n")
-                    return self.getNextToken()
-
-            # String constants
-            elif ch == '"':
-                self.buf = []
-                # TODO: scan a string into the buffer variable buf
-                ch = self.read()
-                while ch != '"':
-                    self.buf.append(ch)
+                if not ch:
+                    raise SyntaxError("Unexpected EOF in string")
+                if ch == '"':
+                    return StrToken("".join(chars))
+                if ch == "\\":
                     ch = self.read()
+                    if ch not in ('"', "\\"):
+                        raise SyntaxError("Expected escaped quote or backslash in string")
+                chars.append(ch)
 
-                return StrToken("".join(self.buf))
-
-            # Integer constants
-            elif self.isDigit(ch):
-                i = ord(ch) - ord('0')
-                # TODO: scan the number and convert it to an integer
-                # only for integers > 0
-                num = str(i)
-                next = self.peek()
-                while self.isDigit(next):
-                    ch = self.read()
-                    num += ch
-                    next = self.peek()
-
-                i = int(num)
-                
-                # make sure that the character following the integer
-                # is not removed from the input stream
-                return IntToken(i)
-    
-            # Identifiers
-            elif (ch >= 'A' and ch <= 'Z') or self.is_valid_initial_ident(ch):
-                # or ch is some other vaid first character
-                # for an identifier
-                self.buf = []
-                self.buf.append(ch)
-                # TODO: scan an identifier into the buffer variable buf
-                next = self.peek()
-                while self.is_valid_subsequent(next):
-                    ch = self.read()
-                    self.buf.append(ch)
-                    next = self.peek()
-                name = "".join(self.buf).lower()
-                # make sure that the character following the identifier
-                # is not removed from the input stream
-                return IdentToken(name)
-
-            # Illegal character
-            else:
-                sys.stderr.write("Illegal input character '" + ch + "'\n")
-                return self.getNextToken()
-
-        except IOError:
-            sys.stderr.write("IOError: error reading input file\n")
-            return None
-
-
-if __name__ == "__main__":
-    scanner = Scanner(sys.stdin)
-    tok = scanner.getNextToken()
-    tt = tok.getType()
-    print(tt)
-    if tt == TokenType.INT:
-        print(tok.getIntVal())
-    elif tt == TokenType.STR:
-        print(tok.getStrVal())
-    elif tt == TokenType.IDENT:
-        print(tok.getName())
-    
+        chars = [ch]
+        while not self.delimiter(self.peek()):
+            chars.append(self.read())
+        word = "".join(chars)
+        lower = word.lower()
+        if lower in ("#t", "#f"):
+            return Token(TokenType.TRUE if lower == "#t" else TokenType.FALSE)
+        if word == ".":
+            return Token(TokenType.DOT)
+        if all(self.isDigit(c) for c in word):
+            return IntToken(int(word))
+        if (word in ("+", "-", "...") or
+                (self.is_valid_initial_ident(word[0]) and
+                 all(self.is_valid_subsequent(c) for c in word[1:]))):
+            return IdentToken(lower)
+        raise SyntaxError("Invalid token: " + repr(word))

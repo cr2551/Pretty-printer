@@ -30,7 +30,7 @@ class Cons(Node):
 
         car = self.getCar()
         if car.isSymbol():
-            if car.name == "set":
+            if car.name == "set!":
                 return Set()
             elif car.name == "define":
                 return Define()

@@ -1,113 +1,70 @@
-# Parser -- the parser for the Scheme printer and interpreter
-#
-# Defines
-#
-#   class Parser
-#
-# Parses the language
-#
-#   exp  ->  ( rest
-#         |  #f
-#         |  #t
-#         |  ' exp
-#         |  integer_constant
-#         |  string_constant
-#         |  identifier
-#    rest -> )
-#         |  exp+ [. exp] )
-#
-# and builds a parse tree.  Lists of the form (rest) are further
-# `parsed' into regular lists and special forms in the constructor
-# for the parse tree node class Cons.  See Cons.parseList() for
-# more information.
-#
-# The parser is implemented as an LL(0) recursive descent parser.
-# I.e., parseExp() expects that the first token of an exp has not
-# been read yet.  If parseRest() reads the first token of an exp
-# before calling parseExp(), that token must be put back so that
-# it can be re-read by parseExp() or an alternative version of
-# parseExp() must be called.
-#
-# If EOF is reached (i.e., if the scanner returns None instead of a token),
-# the parser returns None instead of a tree.  In case of a parse error, the
-# parser discards the offending token (which probably was a DOT
-# or an RPAREN) and attempts to continue parsing with the next token.
+# Parser -- recursive descent over expressions and proper/dotted lists.
 
 import sys
 from Tokens import TokenType
+from Tree import Cons, Ident, IntLit, StrLit, BoolLit, Nil
 
-from Tree import * # added
 
 class Parser:
-    def __init__(self, s):
-        self.scanner = s
+    def __init__(self, scanner):
+        self.scanner = scanner
+        self.had_error = False
 
     def parseExp(self):
-        tok = None
+        # Consume only this expression, not the next expression's first token.
+        tok = self.scanner.getNextToken()
+        while tok is not None and tok.getType() in (TokenType.DOT, TokenType.RPAREN):
+            self.had_error = True
+            sys.stderr.write("Parse error: unexpected " + tok.getType().name + "\n")
+            tok = self.scanner.getNextToken()
+        if tok is None:
+            return None
         return self.parseExpHelper(tok)
 
     def parseExpHelper(self, tok):
-        # TODO: write code for parsing an exp
-        if tok == None:
-            tok = self.scanner.getNextToken()
-            if tok is None:
-                return None
+        if tok is None:
+            raise SyntaxError("Expected expression before EOF")
         tt = tok.getType()
-
         if tt == TokenType.LPAREN:
             return self.parseRest()
-        elif tt == TokenType.TRUE:
+        if tt == TokenType.QUOTE:
+            value = self.parseExpHelper(self.scanner.getNextToken())
+            return Cons(Ident("quote"), Cons(value, Nil.getInstance()))
+        if tt == TokenType.TRUE:
             return BoolLit.getInstance(True)
-        elif tt == TokenType.FALSE:
+        if tt == TokenType.FALSE:
             return BoolLit.getInstance(False)
-        elif tt == TokenType.QUOTE:
-            cons = Cons(Ident("quote"), Cons(self.parseExp(), Nil.getInstance()))
-            return cons
-        elif tt == TokenType.INT:
+        if tt == TokenType.INT:
             return IntLit(tok.getIntVal())
-        elif tt == TokenType.STR:
+        if tt == TokenType.STR:
             return StrLit(tok.getStrVal())
-        elif tt == TokenType.IDENT:
+        if tt == TokenType.IDENT:
             return Ident(tok.getName())
-        return None
+        raise SyntaxError("Expected expression, found " + tt.name)
 
     def parseRest(self):
-        tok = None
-        return self.parseRestHelper(tok)
-
+        return self.parseRestHelper(self.scanner.getNextToken())
 
     def parseRestHelper(self, tok):
-        # TODO: write code for parsing a rest
-        if tok == None:
-            tok = self.scanner.getNextToken()
+        # Iterate over siblings to support long lists without deep recursion.
+        items = []
+        while True:
             if tok is None:
-                return None
-
-        tt = tok.getType()
-        if tt == TokenType.RPAREN:
-            return Nil.getInstance()
-        
-        else:
-            exp = self.parseExpHelper(tok)
+                raise SyntaxError("Expected ')' before EOF")
+            tt = tok.getType()
+            if tt == TokenType.RPAREN:
+                tail = Nil.getInstance()
+                break
+            if tt == TokenType.DOT:
+                if not items:
+                    raise SyntaxError("Dot must follow a list element")
+                tail = self.parseExpHelper(self.scanner.getNextToken())
+                closing = self.scanner.getNextToken()
+                if closing is None or closing.getType() != TokenType.RPAREN:
+                    raise SyntaxError("Expected ')' after dotted tail")
+                break
+            items.append(self.parseExpHelper(tok))
             tok = self.scanner.getNextToken()
-            if tok is None:
-                self.__error("Input reached EOF without ')'")
-                return None
-            if tok.getType() == TokenType.DOT:
-                cons =  Cons(exp, self.parseExp())
-                nextTok = self.scanner.getNextToken()
-                if nextTok is None or nextTok.getType() is not TokenType.RPAREN:
-                    self.__error("Expected ')' after '. exp'")
-                return cons
-                    
-            rest = self.parseRestHelper(tok)
-            cons = Cons(exp, rest)
-            return cons
-        
-    
-
-
-    # TODO: Add any additional methods you might need
-
-    def __error(self, msg):
-        sys.stderr.write("Parse error: " + msg + "\n")
+        for item in reversed(items):
+            tail = Cons(item, tail)
+        return tail
