@@ -1,0 +1,194 @@
+#!/bin/bash
+
+# runtests - Run all testcases
+#
+# Usage: cd into submission directory and run script:
+#     ~/bin/runtests
+#     ~/bin/runtests testfile ...
+#
+# The script takes zero or more test files on the command line.  If tests
+# are listed on the command line, only those tests are run.  Otherwise,
+# all the tests from the test suite are run.  The first line of each test
+# file is a message that is printed when the test fails.  The remainder
+# of the file is used as test input.  Test files with file name extension
+# ".-d" are used for testing the scanner, all other test files are used
+# for testing the pretty printer.
+#
+# The script tests which programming language is used in the directory,
+# assuming a main program name. It runs the executable on the provided test
+# inputs.  The script compares the output of the submission to that of the
+# reference implementation.  For scanner tests, the output must be identical
+# for the test to succeed.  For pretty printer tests, the output is compared
+# using both "diff" and "diff -b".  If the comparison with "diff" fails but
+# the one with "diff -b" succeeds, it means that the tree was build correctly
+# but that the output was formatted incorrectly.
+#
+# A report on the test runs is generated in file dir-report.txt, where dir
+# is the name of the submission directory.
+#
+# Author: Gerald Baumgartner
+# Date:   11/17/2019
+
+project="project2"
+
+# Java main class
+MAIN="Scheme4101"
+# C++ executable name
+EXE="scheme4101"
+# C# executable name
+CSEXE="Scheme4101.exe"
+# Python main file
+PMAIN="Scheme4101.py"
+
+# We compare against the reference implementation in Java after
+# formating both output files with the reference pretty printer
+solutiondir="/classes/cs4101/cs4101_bau/pub/prog2"
+solution="/usr/bin/java -jar $solutiondir/Scheme4101.jar"
+prettyprint="/usr/bin/java -jar /classes/cs4101/cs4101_bau/pub/prog1/SPP.jar"
+
+
+# We compare against the reference implementation in C# after
+# formating both output files with the reference pretty printer
+# solution="/classes/cs4101/cs4101_bau/Csharp-Testing/prog2.soln/Scheme4101.exe"
+# prettyprint="/classes/cs4101/cs4101_bau/Csharp-Testing/prog1.soln/SPP.exe"
+
+# We compare against the reference implementation in Python after
+# formating both output files with the reference pretty printer
+# solutiondir="/classes/cs4101/cs4101_bau/pub/prog2.bin"
+# solution="/usr/bin/python3 $solutiondir/Scheme4101.py"
+# prettyprint="/usr/bin/python3 /classes/cs4101/cs4101_bau/pub/prog1.bin/SPP.py"
+
+# Define the directory that contains the test files
+testdir="/classes/cs4101/cs4101_bau/Testing/Tests/$project"
+
+subdir="`pwd`"
+submission="${subdir##*/}"
+student="${submission%%-*}"
+
+# Detect the submission language
+if ls *.java 1> /dev/null 2>&1; then
+    exe="/usr/bin/java -cp $subdir:$solutiondir/libSPP.jar Scheme4101"
+elif ls *.cpp 1> /dev/null 2>&1; then
+    exe="$subdir/$EXE"
+elif ls *.cs 1> /dev/null 2>&1; then
+    exe="$subdir/`ls *.exe`"
+elif ls *.py 1> /dev/null 2>&1; then
+    exe="/usr/bin/python3 $subdir/$PMAIN"
+else
+    echo "Submission language not detected"
+    exit
+fi
+
+report="$subdir/${student}-testreport.txt"
+
+if ls tmp 1> /dev/null 2>&1; then
+    mv tmp tmp$$
+fi
+
+mkdir tmp
+
+cd $testdir
+
+# If command line arguments are provided, use them, otherwise run all tests.
+if [ "$*" != "" ]; then
+    tests="$*"
+else
+    tests="`ls *`"
+fi
+
+cp -p $tests $subdir/tmp
+cd $subdir/tmp
+
+let "nsucc = 0"
+let "nform = 0"
+let "nfail = 0"
+let "nerrs = 0"
+
+echo "Running tests:" > $report
+
+for i in *; do
+    if [ "${i%%.-d}" != "$i" ]; then
+	# Testing scanner
+	opt="-d"
+    else
+	# Testing interpreter
+	opt=""
+    fi
+
+    cd $solutiondir
+    tail -n +2 $subdir/tmp/$i | $solution $opt > $subdir/tmp/$i.soln~ 2> $subdir/tmp/$i.soln.err
+    cd $subdir
+    bash -c "ulimit -t 3; tail -n +2 tmp/$i | $exe $opt" > tmp/$i.out~ 2> tmp/$i.err
+    cd tmp
+    # Remove any prompts
+    sed -e "s/^[A-Za-z0-9]*> *//" $i.soln~ | $prettyprint > $i.soln 2>&1
+    sed -e "s/^[A-Za-z0-9]*> *//" $i.out~ | $prettyprint > $i.out 2>&1
+
+    if ! diff --text $i.out~ $i.out > /dev/null 2>&1; then
+	rm $i.out~
+    fi
+
+#    diff --text -B $i.soln $i.out > $i.diff 2>&1
+#    diff --text -Bw $i.soln $i.out > $i.diff-b 2>&1
+    diff --text -iEZBw $i.soln $i.out > $i.diff 2>&1
+    diff --text -iEZBw $i.soln $i.out > $i.diff-b 2>&1
+    diff --text $i.soln.err $i.err > $i.err.diff 2>&1
+
+    if diff --text -B $i.soln $i.out > /dev/null 2>&1; then
+	echo "$i: SUCCESS" >> $report
+	let "nsucc = $nsucc + 1"
+
+	if [ -s $i.err.diff ] ; then
+	    echo "$i Errors:" >> $report
+	    echo "-----" >> $report
+	    cat $i.err.diff >> $report
+	    echo "-----" >> $report
+	    let "nerrs = $nerrs + 1"
+	fi
+    else
+	if diff --text -Bw $i.soln $i.out > /dev/null 2>&1; then
+	    echo "$i: FORMAT" >> $report
+	    head -n 1 $i >> $report
+	    echo "-----" >> $report
+	    cat $i.diff  >> $report
+	    echo "-----" >> $report
+	    let "nform = $nform + 1"
+
+	    if [ -s $i.err.diff ] ; then
+		echo "$i Errors:" >> $report
+		echo "-----" >> $report
+		cat $i.err.diff >> $report
+		echo "-----" >> $report
+		let "nerrs = $nerrs + 1"
+	    fi
+	else
+	    echo "$i: FAIL" >> $report
+	    head -n 1 $i >> $report
+	    echo "-----" >> $report
+	    cat $i.diff  >> $report
+	    echo "-----" >> $report
+	    let "nfail = $nfail + 1"
+
+	    if [ -s $i.err.diff ] ; then
+		echo "$i Errors:" >> $report
+		echo "-----" >> $report
+		cat $i.err.diff >> $report
+		echo "-----" >> $report
+		let "nerrs = $nerrs + 1"
+	    fi
+	fi
+    fi
+done
+
+echo >> $report
+echo "$nsucc tests succeeded" >> $report
+echo "$nform tests were formatted incorrectly" >> $report
+echo "$nfail tests failed" >> $report
+echo "$nerrs tests had errors" >> $report
+
+# let "score = 2 * $nsucc + $nform"
+
+# echo >> $report
+# echo "Score: $score" >> $report
+
+cd $subdir
