@@ -38,6 +38,9 @@ class BoolLit(Node):
     def isBool(self):
         return True
 
+    def eval(self, env):
+        return self
+
 if __name__ == "__main__":
     b = BoolLit.getInstance(True)
     b.print(0)

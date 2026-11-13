@@ -46,11 +46,22 @@ class Closure(Node):
         sys.stdout.write(" }\n")
         sys.stdout.flush()
 
+    def eval(self, env):
+        return self
+
     # TODO: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
     def apply(self, args):
         # return StrLit("Error: Closure.apply not yet implemented")
         env = self.getEnv()
+        func = self.getFun()
+        newEnv = Environment(env)
+        params = func.getCdr().getCar()
+        body = func.getCdr().getCdr()
+
+        # bind each parameter to the corresponding argument in the new frame
+        
+
         
 

@@ -24,6 +24,10 @@ class Nil(Node):
     def isNull(self):
         return True
 
+    def eval(self, env):
+        self._error("Cannot evaluate Nil")
+        return Nil.getInstance()
+
 if __name__ == "__main__":
     n = Nil.getInstance()
     n.print(0)

@@ -57,6 +57,9 @@ class BuiltIn(Node):
             sys.stdout.write('\n')
             sys.stdout.flush()
 
+    def eval(self, env):
+        return self
+
     # TODO: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
@@ -67,7 +70,7 @@ class BuiltIn(Node):
         ## if-then-else chain testing for the different names of
         ## the built-in functions.  E.g., here's how load could
         ## be implemented:
-        name = self.symbol.getStrVal()
+        name = self.symbol.getName()
         arg1 = args[0] if args else None
 
         if name == "load":

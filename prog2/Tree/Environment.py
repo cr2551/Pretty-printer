@@ -103,7 +103,7 @@ class Environment(Node):
         
 
     def assign(self, id, value):
-        # TODO: implement this function
+        # Done: implement this function
         # for implementing set!
         # look for the name in the inner scope
         val = Environment.__find(id, self.frame)
