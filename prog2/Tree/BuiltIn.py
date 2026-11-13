@@ -60,28 +60,37 @@ class BuiltIn(Node):
     # TODO: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
-    def apply(self, args):
+    def apply(self, args:list[Node]):
         return StrLit("Error: BuiltIn.apply not yet implemented")
 
         ## The easiest way to implement BuiltIn.apply is as an
         ## if-then-else chain testing for the different names of
         ## the built-in functions.  E.g., here's how load could
         ## be implemented:
- 
-        # if name == "load":
-        #     if not arg1.isString():
-        #         self._error("wrong type of argument")
-        #         return Nil.getInstance()
-        #     filename = arg1.getStrVal()
-        #     try:
-        #         scanner = Scanner(open(filename))
-        #         builder = TreeBuilder()
-        #         parser = Parser(scanner, builder)
+        name = self.symbol.getStrVal()
+        arg1 = args[0] if args else None
 
-        #         root = parser.parseExp()
-        #         while root != None:
-        #             root.eval(BuiltIn.env)
-        #             root = parser.parseExp()
-        #     except IOError:
-        #         self._error("could not find file " + filename)
-        #     return Nil.getInstance()  # or Unspecific.getInstance()
+        if name == "load":
+            if not arg1.isString():
+                self._error("wrong type of argument")
+                return Nil.getInstance()
+            filename = arg1.getStrVal()
+            try:
+                scanner = Scanner(open(filename))
+                builder = TreeBuilder()
+                parser = Parser(scanner, builder)
+
+                root = parser.parseExp()
+                while root != None:
+                    root.eval(BuiltIn.env)
+                    root = parser.parseExp()
+            except IOError:
+                self._error("could not find file " + filename)
+            return Nil.getInstance()  # or Unspecific.getInstance()
+
+        # (eval expression environment-specifier)
+        elif name == "eval":
+            pass
+
+
+

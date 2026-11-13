@@ -92,14 +92,34 @@ class Environment(Node):
             return val.getCar()
 
     def define(self, id, value):
-        # TODO: implement this function
-        pass
+        # Done: implement this function
+        val = Environment.__find(id, self.frame) # look in the innermost scope
+        if val is not None:
+            val.setCar(value) # update the binding if it already exists
+        elif val is None:
+            binding = Cons(id, Cons(value, Nil.getInstance()))
+            self.frame = Cons(binding, self.frame)
+
+        
 
     def assign(self, id, value):
         # TODO: implement this function
-        pass
+        # for implementing set!
+        # look for the name in the inner scope
+        val = Environment.__find(id, self.frame)
+        if val is not None:
+            val.setCar(value) # update the binding
+        elif val is None:
+            # keep looking in the enclosing scopes until we find it or there is no outer scope 
+            if self.env is not None:
+                self.env.assign(id, value)
+            else:
+                self._error("undefined variable " + id.getName())
+
+
 
 if __name__ == "__main__":
     env = Environment()
     env.define(Ident("foo"), IntLit(42))
+    env.assign
     env.print(0)

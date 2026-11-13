@@ -12,6 +12,7 @@
 import sys
 from Tree import Node
 from Tree import Environment
+from Tree import StrLit
 
 class Closure(Node):
     util = None
@@ -49,4 +50,7 @@ class Closure(Node):
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
     def apply(self, args):
-        return StrLit("Error: Closure.apply not yet implemented")
+        # return StrLit("Error: Closure.apply not yet implemented")
+        env = self.getEnv()
+        
+
