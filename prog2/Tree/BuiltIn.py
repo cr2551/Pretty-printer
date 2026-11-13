@@ -107,7 +107,11 @@ class BuiltIn(Node):
             if arg1 is None:
                 self._error("eval expects an expression")
                 return Nil.getInstance()
-            return arg1.eval(BuiltIn.env)
+            if arg2 is not None and arg2.isEnvironment():
+                env = arg2
+            else:
+                env = BuiltIn.env
+            return arg1.eval(env)
 
         # elif name == "b+":
         #     if arg1 is None and arg2 is None:
@@ -135,12 +139,12 @@ class BuiltIn(Node):
                 return Nil.getInstance()
             op = name[1]
             if op == "=":
-                if arg2.intVal == 0:
-                    self._error("division by zero")
-                    return Nil.getInstance()
                 val = eval(f"{arg1.intVal} {op*2} {arg2.intVal}")
                 return BoolLit.getInstance(val)
             elif op == "/":
+                if arg2.intVal == 0:
+                    self._error("division by zero")
+                    return Nil.getInstance()
                 val = int(eval(f"{arg1.intVal} {op} {arg2.intVal}"))
             elif op == "<":
                 val = eval(f"{arg1.intVal} {op} {arg2.intVal}")
@@ -150,7 +154,7 @@ class BuiltIn(Node):
             return IntLit(val)
 
         # Built-in type checks
-        elif name == "number":
+        elif name == "number?":
             if arg1 is not None:
                 return BoolLit.getInstance(arg1.isNumber())
             self._error("number expects an argument")
@@ -165,6 +169,7 @@ class BuiltIn(Node):
                 return BoolLit.getInstance(arg1.isPair())
             self._error("pair? expects an argument")
             return Nil.getInstance()
+        # list operations
         elif name == "car":
             if arg1 is not None and arg1.isPair():
                 return arg1.car
@@ -176,9 +181,44 @@ class BuiltIn(Node):
             self._error("cdr expects a pair")
             return Nil.getInstance()
         elif name == "cons":
-            self._error("Not implemented")
+            if arg1 is not None and arg2 is not None:
+                return Cons(arg1, arg2)
+            self._error("cons expects 2 arguments")
             return Nil.getInstance()
         #  set-car!, set-cdr!, null?, pair?, eq?
+        elif name == "set-car!":
+            if arg1 is not None and arg1.isPair() and arg2 is not None:
+                arg1.setCar(arg2)
+                return Nil.getInstance()
+            self._error("set-car! expects a pair and a value")
+            return Nil.getInstance()
+        elif name == "set-cdr!":
+            if arg1 is not None and arg1.isPair() and arg2 is not None:
+                arg1.setCdr(arg2)
+                return Nil.getInstance()
+            self._error("set-cdr! expects a pair and a value")
+            return Nil.getInstance()
+        elif name == "null?":
+            if arg1 is not None:
+                return BoolLit.getInstance(arg1.isNull())
+            self._error("wrong number of arguments to procedure (null?)")
+            return Nil.getInstance()
+
+        elif name == "eq?":
+            if arg1 is not None and arg2 is not None:
+                return BoolLit.getInstance(arg1 is arg2)
+            self._error("eq? expects 2 arguments")
+            return Nil.getInstance()
+        elif name == "procedure?":
+            if arg1 is not None:
+                return BoolLit.getInstance(arg1.isProcedure())
+            self._error("procedure? expects an argument")
+            return Nil.getInstance()
+
+        # I/O:  read, write, display, newline
+        
+        # eval, apply and interaction-environment
+
         
         
 
