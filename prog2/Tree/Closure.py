@@ -13,6 +13,7 @@ import sys
 from Tree import Node
 from Tree import Environment
 from Tree import StrLit
+from Tree import Nil
 
 class Closure(Node):
     util = None
@@ -52,15 +53,29 @@ class Closure(Node):
     # TODO: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
+    # needs more work
     def apply(self, args):
         # return StrLit("Error: Closure.apply not yet implemented")
-        env = self.getEnv()
+        enclosing_scope = self.getEnv()
         func = self.getFun()
-        newEnv = Environment(env)
-        params = func.getCdr().getCar()
-        body = func.getCdr().getCdr()
+        inner_scope = Environment(enclosing_scope) # add a new frame for the function call
+        params = func.getCdr().getCar() # get parameters of the lambda expression
+        body = func.getCdr().getCdr() # get the body of the lambda
 
         # bind each parameter to the corresponding argument in the new frame
+        # walk list of parameters and arguments to bind them in the new environment
+        while params.isPair() and args.isPair():
+            inner_scope.define(params.getCar(), args.getCar())
+            params = params.getCdr()
+            args = args.getCdr()
+
+        # evaluate the function
+        # result = Nil.getInstance() 
+        while body.isPair():
+            expr = body.getCar()
+            result = expr.eval(inner_scope)
+            body = body.getCdr()
+        return result
         
 
         

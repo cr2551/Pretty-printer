@@ -24,6 +24,7 @@ from Tree import Nil
 from Tree import Cons
 from Tree import TreeBuilder
 #from Tree import Unspecific
+from Parse import Scanner, Parser
 
 class BuiltIn(Node):
     env = None
@@ -63,21 +64,31 @@ class BuiltIn(Node):
     # TODO: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
-    def apply(self, args:list[Node]):
-        return StrLit("Error: BuiltIn.apply not yet implemented")
+    def apply(self, args):
+        # return StrLit("Error: BuiltIn.apply not yet implemented")
 
         ## The easiest way to implement BuiltIn.apply is as an
         ## if-then-else chain testing for the different names of
         ## the built-in functions.  E.g., here's how load could
         ## be implemented:
-        name = self.symbol.getName()
-        arg1 = args[0] if args else None
-
+        name = self.getSymbol().getName()
+        arg1 = None
+        rest = Nil.getInstance()
+        if args.isPair():
+            arg1 = args.getCar()
+            rest = args.getCdr()
+        arg2 = None
+        if rest.isPair():
+            arg2 = rest.getCar()
+    
         if name == "load":
+            if arg1 is None:
+                self._error("wrong number of arguments")
+                return Nil.getInstance()
             if not arg1.isString():
                 self._error("wrong type of argument")
                 return Nil.getInstance()
-            filename = arg1.getStrVal()
+            filename = arg1.strVal
             try:
                 scanner = Scanner(open(filename))
                 builder = TreeBuilder()
@@ -93,7 +104,95 @@ class BuiltIn(Node):
 
         # (eval expression environment-specifier)
         elif name == "eval":
-            pass
+            if arg1 is None:
+                self._error("eval expects an expression")
+                return Nil.getInstance()
+            return arg1.eval(BuiltIn.env)
+
+        # elif name == "b+":
+        #     if arg1 is None and arg2 is None:
+        #         self._error("b+ expects two arguments")
+        #         return Nil.getInstance()
+        #     if arg1.isNumber() and arg2.isNumber():
+        #         return IntLit(arg1.intVal + arg2.intVal)
+        #     self.__error("b+ expects two numbers")
+        #     return Nil.getInstance()
+        
+        # elif name == "b-":
+        #     pass
+        # elif name == "b*":
+        #     pass
+        # elif name == "b/":
+        #     pass
+        # elif name == "b=":
+        #     pass
+        # elif name == "b<":
+        #     pass
+
+        elif name in ("b+", "b-", "b*", "b/", "b=", "b<"):
+            if arg1 is None or arg2 is None or not arg1.isNumber() or not arg2.isNumber():
+                self._error(name + " expects 2 numbers")
+                return Nil.getInstance()
+            op = name[1]
+            if op == "=":
+                if arg2.intVal == 0:
+                    self._error("division by zero")
+                    return Nil.getInstance()
+                val = eval(f"{arg1.intVal} {op*2} {arg2.intVal}")
+                return BoolLit.getInstance(val)
+            elif op == "/":
+                val = int(eval(f"{arg1.intVal} {op} {arg2.intVal}"))
+            elif op == "<":
+                val = eval(f"{arg1.intVal} {op} {arg2.intVal}")
+                return BoolLit.getInstance(val)
+            else:
+                val = eval(f"{arg1.intVal} {op} {arg2.intVal}")
+            return IntLit(val)
+
+        # Built-in type checks
+        elif name == "number":
+            if arg1 is not None:
+                return BoolLit.getInstance(arg1.isNumber())
+            self._error("number expects an argument")
+            return Nil.getInstance()
+        elif name == "symbol?":
+            if arg1 is not None:
+                return BoolLit.getInstance(arg1.isSymbol())
+            self._error("symbol? expects an argument")
+            return Nil.getInstance()
+        elif name == "pair?":
+            if arg1 is not None:
+                return BoolLit.getInstance(arg1.isPair())
+            self._error("pair? expects an argument")
+            return Nil.getInstance()
+        elif name == "car":
+            if arg1 is not None and arg1.isPair():
+                return arg1.car
+            self._error("car expects a pair")
+            return Nil.getInstance()
+        elif name == "cdr":
+            if arg1 is not None and arg1.isPair():
+                return arg1.cdr
+            self._error("cdr expects a pair")
+            return Nil.getInstance()
+        elif name == "cons":
+            self._error("Not implemented")
+            return Nil.getInstance()
+        #  set-car!, set-cdr!, null?, pair?, eq?
+        
+        
+
+        else:
+            self._error("unknown or unimplemetned built-in function: " + name)
+            return Nil.getInstance()
+            self._error("unknown built-in function: " + name)
+
+        
+
+        
+
+
+
 
 
 
