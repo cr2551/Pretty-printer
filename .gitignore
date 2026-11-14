@@ -1,7 +1,10 @@
 *__pycache__
-/prog2/Print
-/prog2/Parse
+/prog2/Print/*
+/prog2/Parse/*
 prog2/Parse/Scanner.pyc
 prog2/Parse/Parser.pyc
 prog2/Parse/Scanner.pyc
 prog2/Print/Printer.pyc
+
+!/prog2/Parse/__init__.py
+!/prog2/Print/__init__.py
