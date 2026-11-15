@@ -50,7 +50,7 @@ class Closure(Node):
     def eval(self, env):
         return self
 
-    # TODO: The method apply() should be defined in class Node
+    # Done: The method apply() should be defined in class Node
     # to report an error.  It should be overridden only in classes
     # BuiltIn and Closure.
     # needs more work
@@ -69,8 +69,18 @@ class Closure(Node):
             params = params.getCdr()
             args = args.getCdr()
 
+        if params.isSymbol():
+            inner_scope.define(params, args)
+        # if there are remaining parameters but no arguments, it's an error
+        elif params.isPair():
+            self._error("wrong number of arguments")
+        # if there are still arguments but no parameters, it's an error
+        elif params.isNull() and args.isPair():
+            self._error("wrong number of arguments")
+            
+
         # evaluate the function
-        # result = Nil.getInstance() 
+        result = Nil.getInstance() 
         while body.isPair():
             expr = body.getCar()
             result = expr.eval(inner_scope)

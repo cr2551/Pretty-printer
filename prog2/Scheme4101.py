@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
         env = Environment()
         BuiltIn.setEnv(env)
-        # Environment.populateEnv(env, ini_file)
+        Environment.populateEnv(env, ini_file)
         env = Environment(env)
         BuiltIn.setEnv(env)
 

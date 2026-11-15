@@ -99,6 +99,33 @@ class Environment(Node):
         elif val is None:
             binding = Cons(id, Cons(value, Nil.getInstance()))
             self.frame = Cons(binding, self.frame)
+        
+    @staticmethod
+    def populateEnv(env, file):
+        # 1. register the built-in functions
+        names = ["symbol?", "number?",
+                "b+", "b-", "b*", "b/", "b=", "b<",
+                "car", "cdr", "cons", "set-car!", "set-cdr!",
+                "null?", "pair?", "eq?", "procedure?",
+                "read", "write", "display", "newline",
+                "eval", "apply", "interaction-environment", "load"]
+        for name in names:
+            env.define(Ident(name), BuiltIn(Ident(name)))
+
+        # 2 load ini.scm. Read each expression and evaluate it in env
+        from Parse import Scanner, Parser
+        from Tree import TreeBuilder
+        try:
+            scanner = Scanner(open(file))
+        except IOError:
+            sys.stderr.write("Error: could not find file " + file + "\n")
+            return
+        parser = Parser(scanner, TreeBuilder())
+        root = parser.parseExp()
+        while root != None:
+            root.eval(env)
+            root = parser.parseExp()
+    
 
         
 
