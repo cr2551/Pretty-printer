@@ -24,7 +24,7 @@ from Tree import Ident
 from Tree import Nil
 from Tree import Cons
 from Tree import TreeBuilder
-#from Tree import Unspecific
+from Tree import Unspecific
 from Parse import Scanner, Parser
 
 class BuiltIn(Node):
@@ -127,7 +127,7 @@ class BuiltIn(Node):
 
         elif name in ("b+", "b-", "b*", "b/", "b=", "b<"):
             if arg1 is None or arg2 is None or not arg1.isNumber() or not arg2.isNumber():
-                self._error("Error: expects 2 numbers")
+                self._error("expects 2 numbers")
                 return Nil.getInstance()
             op = name[1]
             if op == "=":
@@ -135,9 +135,9 @@ class BuiltIn(Node):
                 return BoolLit.getInstance(val)
             elif op == "/":
                 if arg2.intVal == 0:
-                    self._error("Error: division by zero")
+                    self._error("division by zero")
                     return Nil.getInstance()
-                val = float(int(eval(f"{arg1.intVal} {op} {arg2.intVal}")))
+                val = eval(f"{arg1.intVal} {op} {arg2.intVal}")
             elif op == "<":
                 val = eval(f"{arg1.intVal} {op} {arg2.intVal}")
                 return BoolLit.getInstance(val)
@@ -149,33 +149,33 @@ class BuiltIn(Node):
         elif name == "number?":
             if arg1 is not None:
                 return BoolLit.getInstance(arg1.isNumber())
-            self._error("Error: number expects an argument")
+            self._error("number expects an argument")
             return Nil.getInstance()
         elif name == "symbol?":
             if arg1 is not None:
                 return BoolLit.getInstance(arg1.isSymbol())
-            self._error("Error: symbol? expects an argument")
+            self._error("symbol? expects an argument")
             return Nil.getInstance()
         elif name == "pair?":
             if arg1 is not None:
                 return BoolLit.getInstance(arg1.isPair())
-            self._error("Error: pair? expects an argument")
+            self._error("pair? expects an argument")
             return Nil.getInstance()
         # list operations
         elif name == "car":
             if arg1 is not None and arg1.isPair():
                 return arg1.car
-            self._error("Error: car expects a pair")
+            self._error("car expects a pair")
             return Nil.getInstance()
         elif name == "cdr":
             if arg1 is not None and arg1.isPair():
                 return arg1.cdr
-            self._error("Error: cdr expects a pair")
+            self._error("cdr expects a pair")
             return Nil.getInstance()
         elif name == "cons":
             if arg1 is not None and arg2 is not None:
                 return Cons(arg1, arg2)
-            self._error("Error: cons expects 2 arguments")
+            self._error("cons expects 2 arguments")
             return Nil.getInstance()
         #  set-car!, set-cdr!, null?, pair?, eq?
         elif name == "set-car!":
@@ -214,24 +214,24 @@ class BuiltIn(Node):
         elif name == "read": # parse one s-expression from stdin
             parser = Parser(Scanner(sys.stdin), TreeBuilder())
             root = parser.parseExp()
-            return root
+            return root if root is not None else Ident("end-of-file")
         elif name == "write": # write takes an optional second argument (port)
             # which we ignore
             if arg1 is None:
                 self._error("write expects an argument")
-                return Nil.getInstance()
+                return Unspecific.getInstance()
             arg1.print(-1)
             sys.stdout.flush()
-            return Nil.getInstance()
+            return Unspecific.getInstance()
         elif name == "display":
             if arg1 is None:
                 self._error("display expects an argument")
-                return Nil.getInstance()
+                return Unspecific.getInstance()
             arg1.print(-1)
-            return Nil.getInstance()
+            return Unspecific.getInstance()
         elif name == "newline":
             sys.stdout.write("\n")
-            return Nil.getInstance()
+            return Unspecific.getInstance()
         
         # Implement eval, apply and interaction-environment
         # (eval expression environment-specifier)
